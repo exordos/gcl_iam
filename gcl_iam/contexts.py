@@ -17,6 +17,8 @@
 import contextlib
 import logging
 import urllib.parse
+import netaddr
+import typing as tp
 
 from restalchemy.common import contexts
 from restalchemy.storage.sql import engines
@@ -64,6 +66,25 @@ class GenesisCoreAuthContext(contexts.ContextWithStorage):
             new_uri += forwarded_prefix.rstrip("/")
 
         return new_uri
+
+    def get_user_ip(self) -> tp.Optional[netaddr.IPAddress]:
+        request = self.request
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            return netaddr.IPAddress(forwarded_for.split(",")[0].strip())
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return netaddr.IPAddress(real_ip.strip())
+        remote_addr = getattr(request, "remote_addr", None) or getattr(
+            request, "client_addr", None
+        )
+        if remote_addr:
+            return netaddr.IPAddress(str(remote_addr))
+        environ = getattr(request, "environ", None)
+        if environ:
+            remote_env = environ.get("REMOTE_ADDR")
+            return netaddr.IPAddress(remote_env) if remote_env else None
+        return None
 
     @contextlib.contextmanager
     def iam_session(self, iam_context):
