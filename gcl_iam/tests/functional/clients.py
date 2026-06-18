@@ -28,6 +28,7 @@ import jwt
 
 SECRET = "secret"
 DEFAULT_ENDPOINT = "http://localhost:11010/v1/"
+DEFAULT_CLIENT_ALIAS = "default"
 
 
 class GenesisCoreAuth:
@@ -36,7 +37,7 @@ class GenesisCoreAuth:
         username: str,
         password: str,
         grant_type: str = "password",
-        client_uuid: str = "00000000-0000-0000-0000-000000000000",
+        client_uuid: str = DEFAULT_CLIENT_ALIAS,
         client_id: str = "GenesisCoreClientId",
         client_secret: str = "GenesisCoreSecret",
         uuid: str = "00000000-0000-0000-0000-000000000000",
@@ -143,11 +144,12 @@ class GenesisCoreAuth:
     def get_password_auth_params(self):
         params = {
             "grant_type": self._grant_type,
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
             "password": self._password,
             "scope": (f"project:{self._project_id}" if self._project_id else ""),
         }
+        if self._client_uuid != DEFAULT_CLIENT_ALIAS:
+            params["client_id"] = self._client_id
+            params["client_secret"] = self._client_secret
         if self.grant_type in ("password", "username+password"):
             params["username"] = self._username
         elif self.grant_type == "email+password":
