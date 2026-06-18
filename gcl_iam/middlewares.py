@@ -59,12 +59,14 @@ class GenesisCoreAuthMiddleware(contexts_mw.ContextMiddleware):
         iam_engine_driver,
         context_class=contexts.GenesisCoreAuthContext,
         context_kwargs=None,
+        readonly_whitelist=None,
         skip_auth_endpoints: list = None,
     ):
         super().__init__(
             application=application,
             context_class=context_class,
             context_kwargs=context_kwargs,
+            readonly_whitelist=readonly_whitelist,
         )
         self._iam_engine_driver = iam_engine_driver
         self._skip_auth_endpoints = skip_auth_endpoints or []
