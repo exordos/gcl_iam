@@ -988,7 +988,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0.0,<9.0.0" },
     { name = "pytest-timer", marker = "extra == 'test'", specifier = ">=1.0.0,<2.0.0" },
     { name = "pytest-xdist", extras = ["psutil"], marker = "extra == 'test'", specifier = ">=3.6.1,<4.0.0" },
-    { name = "restalchemy", specifier = ">=15.1.2,<16.0.0" },
+    { name = "restalchemy", specifier = ">=15.2.0,<16.0.0" },
     { name = "ruff", marker = "extra == 'ruff'" },
     { name = "shellcheck-py", marker = "extra == 'shellcheck'" },
     { name = "tox", marker = "extra == 'dev'", specifier = ">=4.0.0" },
@@ -2422,7 +2422,7 @@ wheels = [
 
 [[package]]
 name = "restalchemy"
-version = "15.1.2"
+version = "15.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "email-validator" },
@@ -2439,9 +2439,9 @@ dependencies = [
     { name = "requests", version = "2.32.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "webob" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/cb/c43c63537ead1324c150308b6856c2579bf75fb166d2d5db003f6e38134b/restalchemy-15.1.2.tar.gz", hash = "sha256:17a1c83444b8a813ea60ed75b8e877075661d5d81cccb2e190964599a6af32bd", size = 438998, upload-time = "2026-06-15T14:17:33.735Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/d8/455316dd30d281651c99335949a15cebbb3812d573777bf2138ac3351976/restalchemy-15.2.0.tar.gz", hash = "sha256:d99c200998d4ed5deced2bc65a86382596d4240a86ed3e80d228a46d8321b93a", size = 442673, upload-time = "2026-06-24T11:35:03.366Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/db/abe78a331a7c81dae9503dcc8fa67d7b624262c77263007b45b45bd64b5c/restalchemy-15.1.2-py3-none-any.whl", hash = "sha256:063491dc07b90130f858638c891dfa79a3c122086511b56294dc8c9a5cd87bcf", size = 491048, upload-time = "2026-06-15T14:17:32.12Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/d8/f90e222ae25f0e1b1e5cdc54013219e56f3df7da348e475c31c10c10f769/restalchemy-15.2.0-py3-none-any.whl", hash = "sha256:3c00f92f6399415072c7effe44abddc30fc5b936507b5b7e72320d6a4036d774", size = 495315, upload-time = "2026-06-24T11:35:01.607Z" },
 ]
 
 [[package]]

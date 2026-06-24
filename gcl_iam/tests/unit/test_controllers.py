@@ -166,6 +166,54 @@ class TestPolicyBasedControllerMixin:
         assert kwargs == {"project_id": FAKE_PROJECT_ID}
 
 
+class TestPolicyBasedController:
+    def test_update_applies_autovalues(self, user_context):
+        pc = controllers.PolicyBasedController(request=mock.Mock())
+        pc._enforce_and_override_project_id_in_kwargs = mock.Mock()
+        pc._apply_autovalues = mock.Mock(return_value={"name": "server"})
+        dm = mock.Mock()
+        resource_id = uuid.uuid4()
+
+        with mock.patch.object(
+            controllers.controllers.BaseResourceController,
+            "get",
+            return_value=dm,
+        ) as get:
+            result = pc.update(resource_id, name="client")
+
+        pc._enforce_and_override_project_id_in_kwargs.assert_called_once_with(
+            "update", {}
+        )
+        get.assert_called_once_with(resource_id)
+        pc._apply_autovalues.assert_called_once_with({"name": "client"})
+        dm.update_dm.assert_called_once_with(values={"name": "server"})
+        dm.update.assert_called_once_with()
+        assert result is dm
+
+
+class TestPolicyBasedWithoutProjectController:
+    def test_update_applies_autovalues(self, user_context):
+        pc = controllers.PolicyBasedWithoutProjectController(request=mock.Mock())
+        pc._enforce = mock.Mock()
+        pc._apply_autovalues = mock.Mock(return_value={"name": "server"})
+        dm = mock.Mock()
+        resource_id = uuid.uuid4()
+
+        with mock.patch.object(
+            controllers.controllers.BaseResourceController,
+            "get",
+            return_value=dm,
+        ) as get:
+            result = pc.update(resource_id, name="client")
+
+        pc._enforce.assert_called_once_with("update")
+        get.assert_called_once_with(resource_id)
+        pc._apply_autovalues.assert_called_once_with({"name": "client"})
+        dm.update_dm.assert_called_once_with(values={"name": "server"})
+        dm.update.assert_called_once_with()
+        assert result is dm
+
+
 class TestPolicyBasedCheckOtpController:
     def test_check_otp_verified_true(self, otp_enabled_context):
         pc = controllers.PolicyBasedCheckOtpController(request=mock.Mock())

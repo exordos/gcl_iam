@@ -108,6 +108,7 @@ class PolicyBasedController(
         if "project_id" in kwargs and self._ctx_project_id:
             self._force_project_id(kwargs["project_id"])
         dm = super(PolicyBasedController, self).get(uuid, **filters)
+        kwargs = self._apply_autovalues(kwargs)
         dm.update_dm(values=kwargs)
         dm.update()
         return dm
@@ -174,6 +175,7 @@ class PolicyBasedWithoutProjectController(
         self._enforce("update")
         dm = super().get(uuid)
 
+        kwargs = self._apply_autovalues(kwargs)
         dm.update_dm(values=kwargs)
         dm.update()
         return dm
