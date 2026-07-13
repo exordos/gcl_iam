@@ -20,6 +20,7 @@ import unittest.mock as mock
 
 import jwt
 import pytest
+from cryptography import exceptions as cryptography_exceptions
 
 import gcl_iam.algorithms as algorithms
 import gcl_iam.constants as constants
@@ -78,6 +79,35 @@ def test_hs256_jwks_secret_encrypt_decrypt_roundtrip_bytes_key() -> None:
         decryption_key=key_bytes,
     )
     assert decrypted == "secret"
+
+
+def test_hs256_jwks_secret_rejects_invalid_key_length() -> None:
+    with pytest.raises(ValueError, match="must be 32 bytes for A256GCM"):
+        algorithms.encrypt_hs256_jwks_secret(
+            secret="secret",
+            encryption_key=b"too-short",
+        )
+
+
+def test_hs256_jwks_secret_rejects_malformed_payload() -> None:
+    with pytest.raises(ValueError, match="Invalid encrypted HS256 secret format"):
+        algorithms.decrypt_hs256_jwks_secret(
+            secret="aesgcm:missing-ciphertext",
+            decryption_key=os.urandom(32),
+        )
+
+
+def test_hs256_jwks_secret_rejects_wrong_decryption_key() -> None:
+    encrypted = algorithms.encrypt_hs256_jwks_secret(
+        secret="secret",
+        encryption_key=os.urandom(32),
+    )
+
+    with pytest.raises(cryptography_exceptions.InvalidTag):
+        algorithms.decrypt_hs256_jwks_secret(
+            secret=encrypted,
+            decryption_key=os.urandom(32),
+        )
 
 
 def test_hs256_encode_decode_current_key() -> None:
