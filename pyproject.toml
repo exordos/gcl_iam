@@ -19,8 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "bazooka>=1.1.0,<2.0.0",  # Apache-2.0
-    "restalchemy>=15.2.0,<16.0.0",  # Apache-2.0
+    "bazooka>=1.3.4,<2.0.0",  # Apache-2.0
+    "restalchemy>=15.2.6,<16.0.0",  # Apache-2.0
     "izulu>=0.50.0,<1.0.0",  # MIT License
     "pyjwt>=2.9.0,<3.0.0",  # MIT License
     "cryptography>=45.0.5,<50.0.0",  # BSD-3 License
