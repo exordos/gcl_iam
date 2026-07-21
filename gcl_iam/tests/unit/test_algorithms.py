@@ -18,9 +18,9 @@ import base64
 import os
 import unittest.mock as mock
 
+from cryptography import exceptions as cryptography_exceptions
 import jwt
 import pytest
-from cryptography import exceptions as cryptography_exceptions
 
 import gcl_iam.algorithms as algorithms
 import gcl_iam.constants as constants

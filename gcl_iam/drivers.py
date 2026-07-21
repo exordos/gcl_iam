@@ -24,10 +24,8 @@ import typing as tp
 
 import bazooka
 import bazooka.exceptions
+from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa as crypto_rsa
-from cryptography.hazmat.primitives import (
-    serialization as crypto_serialization,
-)
 from restalchemy.common import utils
 
 from gcl_iam import algorithms
