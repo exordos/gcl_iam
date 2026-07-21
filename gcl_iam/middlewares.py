@@ -17,9 +17,9 @@
 #    under the License.
 
 import abc
+from http import client as http_client
 import logging
 import re
-from http import client as http_client
 
 from restalchemy.api.middlewares import contexts as contexts_mw
 from restalchemy.api.middlewares import errors as errors_mw

@@ -21,11 +21,9 @@ import logging
 import os
 import typing as tp
 
+from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa as crypto_rsa
 from cryptography.hazmat.primitives.ciphers import aead
-from cryptography.hazmat.primitives import (
-    serialization as crypto_serialization,
-)
 import jwt
 
 import gcl_iam.constants as c

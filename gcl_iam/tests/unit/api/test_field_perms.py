@@ -14,12 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
+import pytest
 from restalchemy.api import constants
+
 from gcl_iam import rules
-from gcl_iam.api.field_perms import FieldsIamPermissions, Permissions
+from gcl_iam.api.field_perms import FieldsIamPermissions
+from gcl_iam.api.field_perms import Permissions
 
 
 def test_init_with_rule_permissions():

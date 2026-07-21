@@ -14,16 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import pytest
+from unittest import mock
 import uuid
 
-from unittest import mock
-
+import pytest
 from restalchemy.api import constants
 from restalchemy.common import contexts
 
-from gcl_iam.api import controllers
 from gcl_iam import exceptions
+from gcl_iam.api import controllers
 
 FAKE_PROJECT_ID = uuid.UUID("fbe1fc09-e4cc-4cd2-a51d-c823b40155b2")
 FAKE_PROJECT_ID_2 = uuid.UUID("29885802-c8b9-42d5-806f-6ecc1c943bbb")

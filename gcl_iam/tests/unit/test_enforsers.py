@@ -17,9 +17,11 @@
 import collections
 
 import pytest
-from gcl_iam.enforcers import Enforcer, Grant
+
 from gcl_iam import exceptions
 from gcl_iam import rules
+from gcl_iam.enforcers import Enforcer
+from gcl_iam.enforcers import Grant
 
 # Sample permissions data
 perms = [

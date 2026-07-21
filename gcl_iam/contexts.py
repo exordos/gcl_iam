@@ -16,10 +16,10 @@
 
 import contextlib
 import logging
-import urllib.parse
-import netaddr
 import typing as tp
+import urllib.parse
 
+import netaddr
 from restalchemy.common import contexts
 from restalchemy.storage.sql import engines
 
