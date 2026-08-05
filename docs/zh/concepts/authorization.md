@@ -46,7 +46,7 @@ enforcer.enforce(read_document, do_raise=True)
 
 `PolicyBasedCheckOtpController` 的 create/update/delete 总要求
 `otp_verified=True`；若 token 表示启用 OTP，get/filter 也要求验证。客户端以
-`X-OTP` 发送代码，由驱动验证。
+`X-OTP` 发送代码，该代码作为数字串原样传递（前导零是代码的一部分），由驱动验证。
 
 ## 字段权限
 

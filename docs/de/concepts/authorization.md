@@ -52,7 +52,8 @@ projektübergreifend arbeiten. Das Modell muss ein kompatibles `project_id` besi
 
 `PolicyBasedCheckOtpController` verlangt `otp_verified=True` immer für Create,
 Update und Delete. Meldet der Token aktiviertes OTP, gilt dies auch für Get und
-Filter. Clients senden `X-OTP`; der Treiber validiert den als Integer übergebenen Code.
+Filter. Clients senden `X-OTP`; der Code wird unverändert als Ziffernfolge
+weitergereicht -- eine führende Null gehört dazu -- und vom Treiber validiert.
 
 ## Feldberechtigungen
 
