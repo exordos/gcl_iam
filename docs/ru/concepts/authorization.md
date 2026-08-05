@@ -66,8 +66,8 @@ enforcer.enforce(read_document, do_raise=True)
 update и delete. Если token сообщает, что OTP включён, проверка требуется также
 для get и filter.
 
-Клиент передаёт код в `X-OTP`. Middleware преобразует его в integer и передаёт
-в introspection драйвера; валидацию выполняет драйвер.
+Клиент передаёт код в `X-OTP`. Middleware передаёт его в introspection драйвера
+как есть, строкой цифр: ведущий ноль — часть кода. Валидацию выполняет драйвер.
 
 ## Разрешения полей
 

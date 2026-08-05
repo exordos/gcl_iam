@@ -88,9 +88,11 @@ class GenesisCoreAuthMiddleware(contexts_mw.ContextMiddleware):
         return None
 
     def _get_otp_code(self, req):
-        if "X-OTP" not in req.headers:
-            return None
-        return int(req.headers["X-OTP"])
+        # A TOTP code is a digit string, not a number: int() drops the
+        # leading zero of every tenth code and turns "000000" into a falsy
+        # 0. It also has to stay a string to be forwarded as a header.
+        otp_code = req.headers.get("X-OTP", "").strip()
+        return otp_code or None
 
     def _get_unverified_token_info(self, auth_token: str) -> tokens.UnverifiedToken:
         return tokens.UnverifiedToken(auth_token)

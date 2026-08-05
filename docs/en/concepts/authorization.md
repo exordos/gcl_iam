@@ -71,9 +71,9 @@ The model used by a project-aware controller must expose a compatible
 update and delete. If the auth token says OTP is enabled, it also requires a
 verified OTP for get and filter.
 
-Clients pass the one-time code in `X-OTP`. The middleware converts it to an
-integer and forwards it to driver introspection. Drivers decide how to validate
-the code.
+Clients pass the one-time code in `X-OTP`. The middleware forwards it verbatim
+to driver introspection, as the digit string it is -- a leading zero is part of
+the code. Drivers decide how to validate the code.
 
 ## Field permissions
 
