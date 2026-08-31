@@ -70,12 +70,19 @@ class FieldsIamPermissions(field_p.BasePermissions):
         :param fields: dict of field model name and permissions
         :param default: default permission for non-described fields
         """
-        for method_permission in fields.values():
+        for field, method_permission in fields.items():
             for method, permission in method_permission.items():
-                assert (
-                    method.upper() in constants.ALL_RA_METHODS
-                    and permission in Permissions.ALL_PERMISSIONS
-                ) or isinstance(permission, rules.Rule)
+                if method.upper() not in constants.ALL_RA_METHODS:
+                    raise ValueError(
+                        "Unknown RA method %r for field %r" % (method, field)
+                    )
+                if not (
+                    permission in Permissions.ALL_PERMISSIONS
+                    or isinstance(permission, rules.Rule)
+                ):
+                    raise ValueError(
+                        "Unknown permission %r for field %r" % (permission, field)
+                    )
         super().__init__(permission=default)
         self.fields = fields
 
@@ -83,9 +90,20 @@ class FieldsIamPermissions(field_p.BasePermissions):
     def _enforcer(self):
         return contexts.get_context().iam_context.enforcer
 
-    def meets_field_permission(self, model_field_name, req, current_permission):
+    def resolve(self, req, field_names):
+        """What this request may do with each of `field_names`.
 
+        The RA method and the enforcer are read once for the whole
+        resource rather than once per field, and a rule is enforced once
+        however many fields name it.
+        """
         method = req.api_context.get_active_method()
+        granted = {}
+        return {
+            name: self._permission_for(name, method, granted) for name in field_names
+        }
+
+    def _permission_for(self, model_field_name, method, granted):
         field_permission = self.fields.get(model_field_name, {})
 
         # NOTE(g.melikov): By DEFAULT permission is Permissions.RW
@@ -96,13 +114,10 @@ class FieldsIamPermissions(field_p.BasePermissions):
         )
 
         if isinstance(permission, rules.Rule):
-            permission = (
-                Permissions.RW
-                if self._enforcer.enforce(
-                    permission,
-                    do_raise=False,
-                )
-                else Permissions.HIDDEN
-            )
+            allowed = granted.get(permission)
+            if allowed is None:
+                allowed = bool(self._enforcer.enforce(permission, do_raise=False))
+                granted[permission] = allowed
+            permission = Permissions.RW if allowed else Permissions.HIDDEN
 
-        return permission <= current_permission
+        return permission

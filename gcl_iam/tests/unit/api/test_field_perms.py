@@ -14,168 +14,227 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
 from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+import webob
 from restalchemy.api import constants
+from restalchemy.api import contexts as ra_contexts
+from restalchemy.api import packers
+from restalchemy.api import resources
+from restalchemy.dm import models as ra_models
+from restalchemy.dm import properties as ra_properties
+from restalchemy.dm import types as ra_types
 
+from gcl_iam import enforcers
 from gcl_iam import rules
 from gcl_iam.api.field_perms import FieldsIamPermissions
 from gcl_iam.api.field_perms import Permissions
 
+RULE = rules.Rule("iam", "custom_props", "list")
+
+
+def request_for(method=constants.GET):
+    req = webob.Request.blank("/things/")
+    req.api_context = ra_contexts.RequestContext(req)
+    req.api_context.set_active_method(method)
+    return req
+
+
+@contextlib.contextmanager
+def enforcing(*perms):
+    """A context whose enforcer grants exactly `perms`."""
+    context = Mock()
+    context.iam_context.enforcer = enforcers.Enforcer(list(perms))
+    with patch("gcl_iam.api.field_perms.contexts.get_context") as get_context:
+        get_context.return_value = context
+        yield context.iam_context.enforcer
+
 
 def test_init_with_rule_permissions():
-    """Test that FieldsIamPermissions accepts rule-based permissions"""
-    fields = {
-        "field1": {constants.ALL: rules.Rule("service", "resource", "permission")}
-    }
+    fields = {"field1": {constants.ALL: RULE}}
 
-    # This should not raise an exception
     permissions = FieldsIamPermissions(fields=fields)
 
     assert permissions.fields == fields
 
 
 def test_init_invalid_method():
-    """Test that FieldsIamPermissions raises assertion error for invalid methods"""
-    fields = {"field1": {"INVALID_METHOD": Permissions.HIDDEN}}
-
-    # This should raise an AssertionError
-    with pytest.raises(AssertionError):
-        FieldsIamPermissions(fields=fields)
+    with pytest.raises(ValueError):
+        FieldsIamPermissions(fields={"field1": {"INVALID_METHOD": Permissions.HIDDEN}})
 
 
 def test_init_invalid_permission():
-    """Test that FieldsIamPermissions raises assertion error for invalid permissions"""
-    fields = {"field1": {constants.GET: "INVALID_PERMISSION"}}
-
-    # This should raise an AssertionError
-    with pytest.raises(AssertionError):
-        FieldsIamPermissions(fields=fields)
+    with pytest.raises(ValueError):
+        FieldsIamPermissions(fields={"field1": {constants.GET: "INVALID"}})
 
 
-def test_usual_permissions():
-    """Test default permissions without Rules"""
-    mock_enforcer = Mock()
-    mock_context = Mock()
-    mock_context.iam_context.enforcer = mock_enforcer
-
-    fields = {
-        "field1": {
-            constants.GET: Permissions.HIDDEN,
-            constants.CREATE: Permissions.RO,
+def test_a_method_gets_the_permission_named_for_it():
+    permissions = FieldsIamPermissions(
+        fields={
+            "field1": {
+                constants.GET: Permissions.HIDDEN,
+                constants.CREATE: Permissions.RO,
+            }
         }
-    }
+    )
 
-    mock_req = Mock()
-    mock_req.api_context.get_active_method.return_value = constants.CREATE
+    with enforcing():
+        assert permissions.resolve(request_for(constants.GET), ["field1"]) == {
+            "field1": Permissions.HIDDEN
+        }
+        assert permissions.resolve(request_for(constants.CREATE), ["field1"]) == {
+            "field1": Permissions.RO
+        }
 
-    with patch("gcl_iam.api.field_perms.contexts.get_context") as mock_get_context:
-        mock_get_context.return_value = mock_context
-        mock_enforcer.enforce.return_value = True
 
-        permissions = FieldsIamPermissions(fields=fields)
+def test_a_field_nobody_named_gets_the_default():
+    permissions = FieldsIamPermissions(
+        fields={"field1": {constants.CREATE: Permissions.RO}},
+        default=Permissions.HIDDEN,
+    )
 
-        assert permissions.meets_field_permission("field1", mock_req, Permissions.RW)
-        assert permissions.meets_field_permission("field1", mock_req, Permissions.RO)
-        assert not permissions.meets_field_permission(
-            "field1", mock_req, Permissions.HIDDEN
+    with enforcing():
+        assert permissions.resolve(request_for(), ["field2"]) == {
+            "field2": Permissions.HIDDEN
+        }
+
+
+def test_a_rule_the_enforcer_grants_reads_and_writes():
+    permissions = FieldsIamPermissions(fields={"field1": {constants.ALL: RULE}})
+
+    with enforcing("iam.custom_props.list"):
+        assert permissions.resolve(request_for(), ["field1"]) == {
+            "field1": Permissions.RW
+        }
+
+
+def test_a_rule_the_enforcer_denies_hides():
+    permissions = FieldsIamPermissions(fields={"field1": {constants.ALL: RULE}})
+
+    with enforcing("iam.something.else"):
+        assert permissions.resolve(request_for(), ["field1"]) == {
+            "field1": Permissions.HIDDEN
+        }
+
+
+def test_a_rule_standing_as_the_default_answers_for_every_field():
+    permissions = FieldsIamPermissions(fields={}, default=RULE)
+
+    with enforcing("iam.something.else"):
+        assert permissions.resolve(request_for(), ["field1", "field2"]) == {
+            "field1": Permissions.HIDDEN,
+            "field2": Permissions.HIDDEN,
+        }
+
+
+def test_each_rule_is_enforced_once_however_many_fields_name_it():
+    permissions = FieldsIamPermissions(
+        fields={
+            "field1": {constants.ALL: RULE},
+            "field2": {constants.ALL: RULE},
+            "field3": {constants.ALL: rules.Rule("iam", "custom_props", "read")},
+        }
+    )
+    enforcer = Mock()
+    enforcer.enforce.return_value = True
+    context = Mock()
+    context.iam_context.enforcer = enforcer
+
+    with patch("gcl_iam.api.field_perms.contexts.get_context") as get_context:
+        get_context.return_value = context
+        permissions.resolve(request_for(), ["field1", "field2", "field3"])
+
+    assert enforcer.enforce.call_count == 2
+
+
+def test_one_field_is_answered_the_same_way_as_all_of_them():
+    permissions = FieldsIamPermissions(fields={"field1": {constants.ALL: RULE}})
+
+    with enforcing("iam.something.else"):
+        assert permissions.permission_of("field1", request_for()) == Permissions.HIDDEN
+
+
+class Thing(ra_models.ModelWithUUID):
+    name = ra_properties.property(ra_types.String(), default="n")
+    custom_props = ra_properties.property(ra_types.String(), default="p")
+
+
+class TestWhatTheResolutionGuards:
+    """The fields two callers are shown, now that a resolution is reused.
+
+    RESTAlchemy keeps a resolved set of fields by what this container
+    answered, so these drive it through the packer rather than asking the
+    container directly: the requests that must not be told the same.
+    """
+
+    def _resource(self, fields=None, default=Permissions.RW):
+        return resources.ResourceByRAModel(
+            Thing,
+            fields_permissions=FieldsIamPermissions(
+                default=default,
+                fields={"custom_props": {constants.ALL: RULE}}
+                if fields is None
+                else fields,
+            ),
         )
 
+    def _packed(self, resource, method=constants.FILTER):
+        packer = packers.BaseResourcePacker(resource, request_for(method))
+        return sorted(name for name, _, _ in packer._get_visible_fields())
 
-def test_meets_field_permission_default_permission():
-    """Test meets_field_permission with default permission"""
-    mock_enforcer = Mock()
-    mock_context = Mock()
-    mock_context.iam_context.enforcer = mock_enforcer
+    def teardown_method(self):
+        resources.ResourceMap.model_type_to_resource = {}
 
-    fields = {"field1": {constants.CREATE: Permissions.RO}}
+    def test_a_caller_without_the_rule_is_not_shown_the_field(self):
+        resource = self._resource()
 
-    mock_req = Mock()
-    mock_req.api_context.get_active_method.return_value = constants.GET
+        with enforcing("iam.custom_props.list"):
+            assert "custom_props" in self._packed(resource)
+        with enforcing("iam.something.else"):
+            assert "custom_props" not in self._packed(resource)
 
-    with patch("gcl_iam.api.field_perms.contexts.get_context") as mock_get_context:
-        mock_get_context.return_value = mock_context
-        mock_enforcer.enforce.return_value = True
+    def test_and_not_in_the_other_order_either(self):
+        resource = self._resource()
 
-        permissions = FieldsIamPermissions(fields=fields, default=Permissions.HIDDEN)
+        with enforcing("iam.something.else"):
+            assert "custom_props" not in self._packed(resource)
+        with enforcing("iam.custom_props.list"):
+            assert "custom_props" in self._packed(resource)
 
-        # Test with field not in permissions dict - should use default
-        result = permissions.meets_field_permission("field2", mock_req, Permissions.RW)
-        assert result is True
+    def test_the_two_are_kept_apart_rather_than_not_kept(self):
+        # Without this the tests above could pass because nothing is
+        # reused at all.
+        resource = self._resource()
 
+        with enforcing("iam.custom_props.list"):
+            self._packed(resource)
+            self._packed(resource)
+        with enforcing("iam.something.else"):
+            self._packed(resource)
 
-def test_meets_field_permission_rule_enforcement_positive():
-    """Test meets_field_permission with rule enforcement returning positive result"""
-    mock_enforcer = Mock()
-    mock_context = Mock()
-    mock_context.iam_context.enforcer = mock_enforcer
+        assert len(resource._visibility_caches) == 2
 
-    fields = {
-        "field1": {constants.ALL: rules.Rule("service", "resource", "permission")}
-    }
+    def test_a_rule_standing_as_the_default_is_part_of_it_too(self):
+        resource = self._resource(fields={}, default=RULE)
 
-    mock_req = Mock()
-    mock_req.api_context.get_active_method.return_value = constants.GET
+        with enforcing("iam.custom_props.list"):
+            assert "custom_props" in self._packed(resource)
+        with enforcing("iam.something.else"):
+            assert "custom_props" not in self._packed(resource)
 
-    with patch("gcl_iam.api.field_perms.contexts.get_context") as mock_get_context:
-        mock_get_context.return_value = mock_context
-        mock_enforcer.enforce.return_value = True
+    def test_a_method_is_told_apart_where_a_rule_is_what_decides(self):
+        resource = self._resource(fields={"custom_props": {constants.FILTER: RULE}})
 
-        permissions = FieldsIamPermissions(fields=fields)
+        with enforcing("iam.something.else"):
+            assert "custom_props" not in self._packed(resource, constants.FILTER)
+            assert "custom_props" in self._packed(resource, constants.GET)
 
-        assert permissions.meets_field_permission("field1", mock_req, Permissions.RW)
-        assert not permissions.meets_field_permission(
-            "field1", mock_req, Permissions.RO
-        )
-        assert not permissions.meets_field_permission(
-            "field1", mock_req, Permissions.HIDDEN
-        )
+    def test_and_not_in_the_other_order_either_across_methods(self):
+        resource = self._resource(fields={"custom_props": {constants.FILTER: RULE}})
 
-
-def test_meets_field_permission_rule_enforcement_negative():
-    """Test meets_field_permission with rule enforcement returning negative result"""
-    mock_enforcer = Mock()
-    mock_context = Mock()
-    mock_context.iam_context.enforcer = mock_enforcer
-
-    fields = {
-        "field1": {constants.ALL: rules.Rule("service", "resource", "permission")}
-    }
-
-    mock_req = Mock()
-    mock_req.api_context.get_active_method.return_value = constants.GET
-
-    with patch("gcl_iam.api.field_perms.contexts.get_context") as mock_get_context:
-        mock_get_context.return_value = mock_context
-        mock_enforcer.enforce.return_value = False
-
-        permissions = FieldsIamPermissions(fields=fields)
-
-        assert permissions.meets_field_permission("field1", mock_req, Permissions.RW)
-        assert permissions.meets_field_permission("field1", mock_req, Permissions.RO)
-        assert permissions.meets_field_permission(
-            "field1", mock_req, Permissions.HIDDEN
-        )
-
-
-def test_meets_field_permission_no_permission():
-    """Test meets_field_permission when no permissions are set"""
-    mock_enforcer = Mock()
-    mock_context = Mock()
-    mock_context.iam_context.enforcer = mock_enforcer
-
-    fields = {}
-
-    mock_req = Mock()
-    mock_req.api_context.get_active_method.return_value = constants.GET
-
-    with patch("gcl_iam.api.field_perms.contexts.get_context") as mock_get_context:
-        mock_get_context.return_value = mock_context
-        mock_enforcer.enforce.return_value = True
-
-        permissions = FieldsIamPermissions(fields=fields)
-
-        result = permissions.meets_field_permission("field1", mock_req, Permissions.RW)
-        assert result is True
+        with enforcing("iam.something.else"):
+            assert "custom_props" in self._packed(resource, constants.GET)
+            assert "custom_props" not in self._packed(resource, constants.FILTER)
