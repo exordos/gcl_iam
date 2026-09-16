@@ -20,6 +20,7 @@ import uuid
 import pytest
 from restalchemy.api import constants
 from restalchemy.common import contexts
+from restalchemy.dm import filters
 
 from gcl_iam import exceptions
 from gcl_iam.api import controllers
@@ -164,6 +165,15 @@ class TestPolicyBasedControllerMixin:
 
         assert kwargs == {"project_id": FAKE_PROJECT_ID}
 
+    def test_override_project_id_from_ctx_as_filter(self, user_context):
+        kwargs = {}
+        pc = FakeController()
+
+        pc._enforce_and_override_project_id_in_kwargs("read", kwargs, as_filter=True)
+
+        assert isinstance(kwargs["project_id"], filters.EQ)
+        assert kwargs["project_id"].value == FAKE_PROJECT_ID
+
 
 class TestPolicyBasedController:
     def test_update_applies_autovalues(self, user_context):
@@ -181,7 +191,7 @@ class TestPolicyBasedController:
             result = pc.update(resource_id, name="client")
 
         pc._enforce_and_override_project_id_in_kwargs.assert_called_once_with(
-            "update", {}
+            "update", {}, as_filter=True
         )
         get.assert_called_once_with(resource_id)
         pc._apply_autovalues.assert_called_once_with({"name": "client"})

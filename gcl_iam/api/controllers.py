@@ -64,14 +64,17 @@ class PolicyBasedControllerMixin(object):
 
         self._force_project_id(project_id)
 
-    def _enforce_and_override_project_id_in_kwargs(self, method, kwargs):
+    def _enforce_and_override_project_id_in_kwargs(
+        self, method, kwargs, as_filter=False
+    ):
         if self._enforce(method) and not self._ctx_project_id:
             return
 
         if "project_id" in kwargs:
             self._force_project_id(kwargs["project_id"])
         else:
-            kwargs["project_id"] = types.UUID().from_simple_type(self._ctx_project_id)
+            project_id = types.UUID().from_simple_type(self._ctx_project_id)
+            kwargs["project_id"] = filters.EQ(project_id) if as_filter else project_id
 
     def _check_otp(self, method):
         if self._introspection.get("otp_enabled") or method in self._otp_mandatory:
@@ -88,23 +91,27 @@ class PolicyBasedController(
         return super(PolicyBasedControllerMixin, self).create(**kwargs)
 
     def get(self, **kwargs):
-        self._enforce_and_override_project_id_in_kwargs("read", kwargs)
+        self._enforce_and_override_project_id_in_kwargs("read", kwargs, as_filter=True)
         res = super(PolicyBasedControllerMixin, self).get(**kwargs)
         return res
 
     def filter(self, filters, order_by=None):
-        self._enforce_and_override_project_id_in_kwargs("read", filters)
+        self._enforce_and_override_project_id_in_kwargs("read", filters, as_filter=True)
         return super(PolicyBasedController, self).filter(filters, order_by=order_by)
 
     def delete(self, uuid):
         filters = {}
-        self._enforce_and_override_project_id_in_kwargs("delete", filters)
+        self._enforce_and_override_project_id_in_kwargs(
+            "delete", filters, as_filter=True
+        )
         dm = super(PolicyBasedController, self).get(uuid, **filters)
         dm.delete()
 
     def update(self, uuid, **kwargs):
         filters = {}
-        self._enforce_and_override_project_id_in_kwargs("update", filters)
+        self._enforce_and_override_project_id_in_kwargs(
+            "update", filters, as_filter=True
+        )
         if "project_id" in kwargs and self._ctx_project_id:
             self._force_project_id(kwargs["project_id"])
         dm = super(PolicyBasedController, self).get(uuid, **filters)
