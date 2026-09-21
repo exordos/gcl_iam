@@ -78,6 +78,12 @@ parser делает не больше двух splits.
 
 CRUD mapping: `create`, `read`, `update`, `delete`; filter соответствует `read`.
 
+## `gcl_iam.api.resources`
+
+- `ProjectResourceByRAModel` — `ResourceByRAModel` для моделей
+  `PolicyBasedController` и `NestedPolicyBasedController`: схема create не
+  требует `project_id`, его подставляет контроллер.
+
 ## `gcl_iam.api.field_perms`
 
 - `FieldsIamPermissions(fields, default=Permissions.RW)` — field permissions с `Rule`.
