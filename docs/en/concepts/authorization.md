@@ -65,6 +65,9 @@ required rule and may access only the introspected `project_id`.
 The model used by a project-aware controller must expose a compatible
 `project_id` property.
 
+Declare its resource with `gcl_iam.api.resources.ProjectResourceByRAModel`
+so the OpenAPI create schema does not require `project_id`.
+
 ## OTP
 
 `PolicyBasedCheckOtpController` always requires `otp_verified=True` for create,

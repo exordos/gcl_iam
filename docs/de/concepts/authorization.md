@@ -47,6 +47,8 @@ die Regel und darf nur auf die introspektierte `project_id` zugreifen.
 `PolicyBasedController` setzt das Projekt bei Create/Filter, lehnt Konflikte
 ab, filtert Get/Update/Delete und lässt unscoped Identitäten mit Berechtigung
 projektübergreifend arbeiten. Das Modell muss ein kompatibles `project_id` besitzen.
+Mit `gcl_iam.api.resources.ProjectResourceByRAModel` als Ressource verlangt
+das OpenAPI-Create-Schema kein `project_id`.
 
 ## OTP
 

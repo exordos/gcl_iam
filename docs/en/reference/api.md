@@ -89,6 +89,12 @@ Error responses use OAuth-style identifiers such as `invalid_client`,
 The default CRUD action mapping is `create`, `read`, `update`, `delete`, with
 filter mapped to `read`.
 
+## `gcl_iam.api.resources`
+
+- `ProjectResourceByRAModel` — `ResourceByRAModel` for the models of
+  `PolicyBasedController` and `NestedPolicyBasedController`: the create schema
+  does not require `project_id`, which the controller fills in.
+
 ## `gcl_iam.api.field_perms`
 
 - `FieldsIamPermissions(fields, default=Permissions.RW)` — per-method

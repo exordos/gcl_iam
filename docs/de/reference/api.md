@@ -52,6 +52,12 @@ GET) und `ErrorsHandlerMiddleware` (HTTP 400/401/403 mit `invalid_client`,
 `PolicyBasedCheckOtpController`. CRUD mappt auf `create/read/update/delete`,
 Filter auf `read`.
 
+## `gcl_iam.api.resources`
+
+`ProjectResourceByRAModel` — `ResourceByRAModel` für Modelle von
+`PolicyBasedController` und `NestedPolicyBasedController`: Das Create-Schema
+verlangt kein `project_id`, der Controller setzt es selbst.
+
 ## `gcl_iam.api.field_perms`
 
 `FieldsIamPermissions(fields, default=Permissions.RW)` und der RESTAlchemy-Alias
