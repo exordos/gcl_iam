@@ -45,6 +45,12 @@ URL 和客户端 IP。
 `PolicyBasedCheckOtpController`。CRUD 映射为 create/read/update/delete，filter
 映射为 read。
 
+## `gcl_iam.api.resources`
+
+`ProjectResourceByRAModel`：用于 `PolicyBasedController` 与
+`NestedPolicyBasedController` 模型的 `ResourceByRAModel`。create schema 不要求
+`project_id`，由控制器填入。
+
 ## `gcl_iam.api.field_perms`
 
 `FieldsIamPermissions(fields, default=Permissions.RW)` 与 RESTAlchemy

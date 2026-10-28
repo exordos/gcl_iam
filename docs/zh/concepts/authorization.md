@@ -41,6 +41,8 @@ enforcer.enforce(read_document, do_raise=True)
 权限与项目检查同时生效。scoped 用户既要有规则，又只能访问 introspection 的
 `project_id`。控制器为 create/filter 注入项目，在 get/update/delete 前过滤项目，
 并拒绝冲突值。模型必须有兼容的 `project_id`。
+资源使用 `gcl_iam.api.resources.ProjectResourceByRAModel` 声明，
+OpenAPI create schema 就不会要求 `project_id`。
 
 ## OTP
 

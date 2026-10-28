@@ -59,6 +59,8 @@ enforcer.enforce(read_document, do_raise=True)
 - разрешает identity без scope и с нужным permission работать со всеми проектами.
 
 Модель проектного контроллера должна содержать совместимое поле `project_id`.
+Объявите его ресурс через `gcl_iam.api.resources.ProjectResourceByRAModel`,
+чтобы схема create в OpenAPI не требовала `project_id`.
 
 ## OTP
 
