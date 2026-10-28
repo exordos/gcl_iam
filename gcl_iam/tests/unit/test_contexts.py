@@ -62,3 +62,41 @@ def test_get_real_url_with_prefix_forwarded_port_header() -> None:
 
     ctx = contexts.GenesisCoreAuthContext(req)
     assert ctx.get_real_url_with_prefix() == "https://example.com:8443/api"
+
+
+def test_get_real_url_with_prefix_forwarded_default_https_port() -> None:
+    req = mock.Mock()
+    req.headers = {
+        "X-Forwarded-Proto": "https",
+        "X-Forwarded-Host": "example.com",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Prefix": "/api/",
+    }
+    req.host_url = "http://internal.local/"
+
+    ctx = contexts.GenesisCoreAuthContext(req)
+    assert ctx.get_real_url_with_prefix() == "https://example.com/api"
+
+
+def test_get_real_url_with_prefix_forwarded_default_http_port() -> None:
+    req = mock.Mock()
+    req.headers = {
+        "X-Forwarded-Proto": "http",
+        "X-Forwarded-Port": "80",
+    }
+    req.host_url = "http://example.com/"
+
+    ctx = contexts.GenesisCoreAuthContext(req)
+    assert ctx.get_real_url_with_prefix() == "http://example.com"
+
+
+def test_get_real_url_with_prefix_keeps_port_of_other_scheme() -> None:
+    req = mock.Mock()
+    req.headers = {
+        "X-Forwarded-Proto": "https",
+        "X-Forwarded-Port": "80",
+    }
+    req.host_url = "http://example.com/"
+
+    ctx = contexts.GenesisCoreAuthContext(req)
+    assert ctx.get_real_url_with_prefix() == "https://example.com:80"

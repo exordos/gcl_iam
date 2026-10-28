@@ -28,6 +28,8 @@ from gcl_iam import exceptions as e
 
 LOG = logging.getLogger(__name__)
 
+DEFAULT_PORTS = {"http": "80", "https": "443"}
+
 
 class GenesisCoreAuthContext(contexts.ContextWithStorage):
     def __init__(
@@ -57,6 +59,12 @@ class GenesisCoreAuthContext(contexts.ContextWithStorage):
         scheme = forwarded_proto or parsed.scheme
         host = forwarded_host or parsed.hostname
         port = forwarded_port or parsed.port
+
+        # Omit the default port of the scheme so the URL matches the one the
+        # client used (e.g. the OIDC issuer must equal https://host, not
+        # https://host:443).
+        if port is not None and str(port) == DEFAULT_PORTS.get(scheme):
+            port = None
 
         new_uri = (
             f"{scheme}://{host}:{port}" if port is not None else f"{scheme}://{host}"
